@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+
 import { RolesGuard } from './guards/roles.guard';
 import { HomeController } from './controllers/home.controller';
+import { OptionsController } from './options.controller';
+
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -20,7 +23,6 @@ import { PublishingWorkerModule } from './workers/publishing-worker.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
@@ -35,7 +37,10 @@ import { PublishingWorkerModule } from './workers/publishing-worker.module';
     HealthModule,
     PublishingWorkerModule,
   ],
-  controllers: [HomeController],
+  controllers: [
+    HomeController,
+    OptionsController, // 🔑 REQUIRED FOR CORS PREFLIGHT
+  ],
   providers: [
     {
       provide: APP_GUARD,
@@ -43,4 +48,4 @@ import { PublishingWorkerModule } from './workers/publishing-worker.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
