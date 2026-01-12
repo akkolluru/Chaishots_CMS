@@ -5,7 +5,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { RolesGuard } from './guards/roles.guard';
 import { HomeController } from './controllers/home.controller';
-import { OptionsController } from './options.controller';
 
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -18,7 +17,6 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
 import { PublishingWorkerModule } from './workers/publishing-worker.module';
-import { AuthOptionsController } from './controllers/auth-options.controller';
 
 @Module({
   imports: [
@@ -40,7 +38,6 @@ import { AuthOptionsController } from './controllers/auth-options.controller';
   ],
   controllers: [
     HomeController,
-    AuthOptionsController, // 🔑 REQUIRED FOR CORS PREFLIGHT
   ],
   providers: [
     {
