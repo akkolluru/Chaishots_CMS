@@ -7,17 +7,30 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   /**
-   * 1️⃣ CORS MUST COME FIRST
+   * 🔑 CRITICAL: Enable CORS FIRST
    */
   app.enableCors({
     origin: 'https://chaishots-cms-frontend.onrender.com',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   /**
-   * 2️⃣ THEN security headers
+   * 🔑 CRITICAL: Explicitly handle OPTIONS globally
+   */
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+    } else {
+      next();
+    }
+  });
+
+  /**
+   * Security
    */
   app.use(
     helmet({
@@ -26,9 +39,6 @@ async function bootstrap() {
     }),
   );
 
-  /**
-   * 3️⃣ Validation
-   */
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -36,9 +46,6 @@ async function bootstrap() {
     }),
   );
 
-  /**
-   * 4️⃣ Start server (Render uses PORT=10000)
-   */
   const port = process.env.PORT || 10000;
   await app.listen(port, '0.0.0.0');
 
