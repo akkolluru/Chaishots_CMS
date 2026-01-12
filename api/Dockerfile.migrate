@@ -1,0 +1,30 @@
+# Dockerfile for migration and seeding
+FROM node:18-slim
+
+# Install dependencies for native packages including PostgreSQL
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application to ensure all files are available
+RUN npm run build
+
+# Rebuild native modules
+RUN npm rebuild argon2
+
+EXPOSE 3000
+
+# The command will be overridden by the docker-compose command
+CMD ["echo", "Migration container ready"]

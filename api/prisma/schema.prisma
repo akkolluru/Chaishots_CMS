@@ -1,0 +1,183 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  draft
+  scheduled
+  published
+  archived
+}
+
+enum ContentType {
+  video
+  article
+}
+
+enum AssetType {
+  poster
+  thumbnail
+  subtitle
+}
+
+enum AssetVariant {
+  portrait
+  landscape
+  square
+  banner
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        String   // 'admin', 'editor', 'viewer'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  sessions    Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Topic {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Many-to-many relationship with Program
+  programs    ProgramToTopic[]
+}
+
+model Program {
+  id                           String              @id @default(cuid())
+  title                        String
+  description                  String?
+  languagePrimary              String              // e.g., 'te', 'hi', 'en'
+  languagesAvailable           String[]            // must include primary
+  status                       Status              @default(draft)
+  publishedAt                  DateTime?
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+
+  // Many-to-many relationship with Topic
+  topics                       ProgramToTopic[]
+
+  // Terms in this program
+  terms                        Term[]
+
+  // Assets for this program
+  assets                       ProgramAsset[]
+
+  @@index([status, languagePrimary, publishedAt])
+}
+
+model ProgramAsset {
+  id              String         @id @default(cuid())
+  programId       String
+  language        String
+  variant         AssetVariant
+  assetType       AssetType      @default(poster)
+  url             String
+
+  program         Program        @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, language, variant, assetType])
+  @@index([programId])
+  @@index([language])
+  @@index([variant])
+  @@index([assetType])
+}
+
+model Term {
+  id             String           @id @default(cuid())
+  programId      String
+  termNumber     Int              // unique per program
+  title          String?
+  createdAt      DateTime         @default(now())
+  
+  program        Program          @relation(fields: [programId], references: [id], onDelete: Cascade)
+  lessons        Lesson[]
+  
+  @@unique([programId, termNumber])
+}
+
+model Lesson {
+  id                                String              @id @default(cuid())
+  termId                            String
+  lessonNumber                      Int                 // unique per term
+  title                             String
+  contentType                       ContentType
+  durationMs                        Int?                // required if video
+  isPaid                            Boolean             @default(false)
+
+  // Multi-language content
+  contentLanguagePrimary            String              // primary content language
+  contentLanguagesAvailable         String[]            // must include primary
+  contentUrlsByLanguage             Json                // map of language -> URL
+  subtitleLanguages                 String[]            // available subtitle languages
+  subtitleUrlsByLanguage            Json?               // map of language -> URL (optional)
+
+  // Publishing workflow
+  status                            Status              @default(draft)
+  publishAt                         DateTime?           // required if scheduled
+  publishedAt                       DateTime?           // required if published
+  createdAt                         DateTime            @default(now())
+  updatedAt                         DateTime            @updatedAt
+
+  term                              Term                @relation(fields: [termId], references: [id], onDelete: Cascade)
+  assets                            LessonAsset[]
+
+  @@index([status, publishAt])
+  @@index([termId, lessonNumber])
+  @@index([status, publishedAt])
+}
+
+model LessonAsset {
+  id              String         @id @default(cuid())
+  lessonId        String
+  language        String
+  variant         AssetVariant
+  assetType       AssetType      @default(thumbnail)
+  url             String
+
+  lesson          Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, language, variant, assetType])
+  @@index([lessonId])
+  @@index([language])
+  @@index([variant])
+  @@index([assetType])
+}
+
+// Many-to-many relationship table between Program and Topic
+model ProgramToTopic {
+  programId String
+  topicId   String
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([programId, topicId])
+  @@index([programId])
+  @@index([topicId])
+}

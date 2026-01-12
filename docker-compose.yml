@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: chaishots_db
+    environment:
+      POSTGRES_DB: chaishots
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: chaishots_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: chaishots_api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/chaishots
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      REFRESH_JWT_SECRET: your-super-secret-refresh-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 24h
+      REFRESH_JWT_EXPIRES_IN: 7d
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run start
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: chaishots_web
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      PORT: 3001
+      NODE_ENV: production
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.migrate
+    container_name: chaishots_migrate
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx ts-node -r tsconfig-paths/register src/scripts/seed.ts
+      "
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/chaishots
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: chaishots_worker
+    command: npm run worker
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/chaishots
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      NODE_ENV: production
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

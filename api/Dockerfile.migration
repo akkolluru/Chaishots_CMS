@@ -1,0 +1,22 @@
+FROM node:18-slim
+
+# Install dependencies for native packages including PostgreSQL
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+EXPOSE 3000
+
+CMD ["npx", "prisma", "migrate", "dev", "--name", "init"]
