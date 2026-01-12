@@ -37,14 +37,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/chaishots
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      REFRESH_JWT_SECRET: your-super-secret-refresh-jwt-key-change-in-production
-      JWT_EXPIRES_IN: 24h
-      REFRESH_JWT_EXPIRES_IN: 7d
-      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/chaishots}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      REFRESH_JWT_SECRET: ${REFRESH_JWT_SECRET:-your-super-secret-refresh-jwt-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      REFRESH_JWT_EXPIRES_IN: ${REFRESH_JWT_EXPIRES_IN:-7d}
+      PORT: ${API_PORT:-3000}
       NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -61,8 +62,8 @@ services:
     ports:
       - "3001:3001"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
-      PORT: 3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      PORT: ${WEB_PORT:-3001}
       NODE_ENV: production
     depends_on:
       - api
@@ -93,9 +94,9 @@ services:
     container_name: chaishots_worker
     command: npm run worker
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/chaishots
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/chaishots}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       NODE_ENV: production
     depends_on:
       migrate:

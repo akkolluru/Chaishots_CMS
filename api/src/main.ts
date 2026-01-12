@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import * as cors from 'cors';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
@@ -18,23 +17,23 @@ async function bootstrap() {
 
     /**
      * ---------------------------
-     * CORS CONFIGURATION (CRITICAL)
+     * CORS CONFIGURATION (FIXED)
      * ---------------------------
-     * We explicitly require CORS_ORIGIN.
-     * No localhost fallback.
-     * No wildcard.
-     * This is REQUIRED for browsers with credentials.
+     * Must use NestJS enableCors
+     * NOT express cors() middleware
      */
-    if (!process.env.CORS_ORIGIN) {
+    const corsOrigin = process.env.CORS_ORIGIN;
+
+    if (!corsOrigin) {
       throw new Error('CORS_ORIGIN environment variable is not defined');
     }
 
-    app.use(
-      cors({
-        origin: process.env.CORS_ORIGIN,
-        credentials: true,
-      }),
-    );
+    app.enableCors({
+      origin: corsOrigin,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    });
 
     /**
      * ---------------------------
@@ -58,9 +57,8 @@ async function bootstrap() {
 
     /**
      * ---------------------------
-     * Server startup
+     * Server startup (Render)
      * ---------------------------
-     * Render REQUIRES process.env.PORT
      */
     const port = process.env.PORT;
     if (!port) {
@@ -68,12 +66,12 @@ async function bootstrap() {
     }
 
     await app.listen(port, '0.0.0.0');
-
-    console.log(`API server is running on port ${port}`);
+    console.log(`✅ API server running on port ${port}`);
   } catch (error) {
-    console.error('❌ Failed to start API:', error);
+    console.error(' Failed to start API:', error);
     process.exit(1);
   }
 }
 
 bootstrap();
+
