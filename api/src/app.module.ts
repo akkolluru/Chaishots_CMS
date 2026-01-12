@@ -18,6 +18,7 @@ import { AssetsModule } from './modules/assets/assets.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
 import { PublishingWorkerModule } from './workers/publishing-worker.module';
+import { AuthOptionsController } from './controllers/auth-options.controller';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { PublishingWorkerModule } from './workers/publishing-worker.module';
   ],
   controllers: [
     HomeController,
-    OptionsController, // 🔑 REQUIRED FOR CORS PREFLIGHT
+    AuthOptionsController, // 🔑 REQUIRED FOR CORS PREFLIGHT
   ],
   providers: [
     {

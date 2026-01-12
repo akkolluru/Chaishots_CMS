@@ -1,10 +1,10 @@
 import { Controller, Options, Res } from '@nestjs/common';
 import { Response } from 'express';
 
-@Controller()
-export class OptionsController {
-    @Options('*')
-    handleOptions(@Res() res: Response) {
+@Controller('auth')
+export class AuthOptionsController {
+    @Options('login')
+    optionsLogin(@Res() res: Response) {
         const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3001';
         res.header(
             'Access-Control-Allow-Origin',
@@ -13,7 +13,7 @@ export class OptionsController {
         res.header('Access-Control-Allow-Credentials', 'true');
         res.header(
             'Access-Control-Allow-Methods',
-            'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+            'POST, OPTIONS',
         );
         res.header(
             'Access-Control-Allow-Headers',
