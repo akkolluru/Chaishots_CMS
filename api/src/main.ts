@@ -22,7 +22,12 @@ async function bootstrap() {
      * Must use NestJS enableCors
      * NOT express cors() middleware
      */
+    
     const corsOrigin = process.env.CORS_ORIGIN;
+    app.use((req, res, next) => {
+      console.log('➡️ Incoming request:', req.method, req.url);
+      next();
+    });
 
     if (!corsOrigin) {
       throw new Error('CORS_ORIGIN environment variable is not defined');
