@@ -2,81 +2,47 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
-  try {
-    const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule);
 
-    /**
-     * ---------------------------
-     * Security middleware
-     * ---------------------------
-     */
-    app.use(helmet());
+  /**
+   * 1️⃣ CORS MUST COME FIRST
+   */
+  app.enableCors({
+    origin: 'https://chaishots-cms-frontend.onrender.com',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
-    /**
-     * ---------------------------
-     * CORS CONFIGURATION (FIXED)
-     * ---------------------------
-     * Must use NestJS enableCors
-     * NOT express cors() middleware
-     */
-    
-    const corsOrigin = process.env.CORS_ORIGIN;
-    app.use((req, res, next) => {
-      console.log('➡️ Incoming request:', req.method, req.url);
-      next();
-    });
+  /**
+   * 2️⃣ THEN security headers
+   */
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
+    }),
+  );
 
-    if (!corsOrigin) {
-      throw new Error('CORS_ORIGIN environment variable is not defined');
-    }
+  /**
+   * 3️⃣ Validation
+   */
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
-    app.enableCors({
-      origin: corsOrigin,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-    });
+  /**
+   * 4️⃣ Start server (Render uses PORT=10000)
+   */
+  const port = process.env.PORT || 10000;
+  await app.listen(port, '0.0.0.0');
 
-    /**
-     * ---------------------------
-     * Global exception handling
-     * ---------------------------
-     */
-    app.useGlobalFilters(new AllExceptionsFilter());
-
-    /**
-     * ---------------------------
-     * Global validation
-     * ---------------------------
-     */
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-
-    /**
-     * ---------------------------
-     * Server startup (Render)
-     * ---------------------------
-     */
-    const port = process.env.PORT;
-    if (!port) {
-      throw new Error('PORT environment variable is not defined');
-    }
-
-    await app.listen(port, '0.0.0.0');
-    console.log(`✅ API server running on port ${port}`);
-  } catch (error) {
-    console.error(' Failed to start API:', error);
-    process.exit(1);
-  }
+  console.log(`API running on port ${port}`);
 }
 
 bootstrap();
-
