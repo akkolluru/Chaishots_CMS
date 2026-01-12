@@ -11,8 +11,17 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
-COPY . .
+
+# Copy prisma directory first to ensure it's available for generation
+COPY prisma ./prisma
+
+# Generate Prisma client
 RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
+
+# Build the application
 RUN npm run build
 
 # Production stage
@@ -29,6 +38,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --production
 RUN npm rebuild argon2
+
+# Copy prisma directory to production stage
+COPY prisma ./prisma
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist

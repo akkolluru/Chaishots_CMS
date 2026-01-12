@@ -13,10 +13,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY . .
+# Copy prisma directory first to ensure it's available for generation
+COPY prisma ./prisma
 
 # Generate Prisma client
 RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
 
 # Build the application to ensure all files are available
 RUN npm run build
