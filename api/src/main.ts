@@ -9,19 +9,45 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
 
-    // Security
+    /**
+     * ---------------------------
+     * Security middleware
+     * ---------------------------
+     */
     app.use(helmet());
 
-    // Enable CORS
-    app.use(cors({
-      origin: process.env.CORS_ORIGIN || '*',
-      credentials: true,
-    }));
+    /**
+     * ---------------------------
+     * CORS CONFIGURATION (CRITICAL)
+     * ---------------------------
+     * We explicitly require CORS_ORIGIN.
+     * No localhost fallback.
+     * No wildcard.
+     * This is REQUIRED for browsers with credentials.
+     */
+    if (!process.env.CORS_ORIGIN) {
+      throw new Error('CORS_ORIGIN environment variable is not defined');
+    }
 
-    // Use global exception filter for consistent error format
+    app.use(
+      cors({
+        origin: process.env.CORS_ORIGIN,
+        credentials: true,
+      }),
+    );
+
+    /**
+     * ---------------------------
+     * Global exception handling
+     * ---------------------------
+     */
     app.useGlobalFilters(new AllExceptionsFilter());
 
-    // Validation
+    /**
+     * ---------------------------
+     * Global validation
+     * ---------------------------
+     */
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -30,15 +56,24 @@ async function bootstrap() {
       }),
     );
 
-    const port = process.env.PORT || 3000;
-    await app.listen(port, '0.0.0.0', () => {
-      console.log(`Server running on port ${port}`);
-    });
+    /**
+     * ---------------------------
+     * Server startup
+     * ---------------------------
+     * Render REQUIRES process.env.PORT
+     */
+    const port = process.env.PORT;
+    if (!port) {
+      throw new Error('PORT environment variable is not defined');
+    }
 
-    console.log(`Application is running on: http://localhost:${port}`);
+    await app.listen(port, '0.0.0.0');
+
+    console.log(`API server is running on port ${port}`);
   } catch (error) {
-    console.error('Error starting the application:', error);
+    console.error('❌ Failed to start API:', error);
     process.exit(1);
   }
 }
+
 bootstrap();
