@@ -1,30 +1,30 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, CorsConfigOptions } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Get CORS origin from environment variable, with fallback to localhost for development
-  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3001';
+  // Trust proxy for platforms like Render
+  app.set('trust proxy', 1);
 
-  /**
-   * 🔑 CRITICAL: Enable CORS FIRST
-   */
-  app.enableCors({
-    origin: corsOrigin,
+  // Enable CORS FIRST before any other middleware
+  const corsOptions: CorsConfigOptions = {
+    origin: process.env.NODE_ENV === 'production'
+      ? 'https://chaishots-cms-frontend.onrender.com'
+      : '*', // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     exposedHeaders: ['Content-Type', 'Authorization'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
-  });
+  };
 
-  /**
-   * Security
-   */
+  app.enableCors(corsOptions);
+
+  // Apply security middleware after CORS
   app.use(
     helmet({
       crossOriginResourcePolicy: false,
@@ -32,6 +32,7 @@ async function bootstrap() {
     }),
   );
 
+  // Apply validation pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
