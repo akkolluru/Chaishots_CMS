@@ -1,14 +1,10 @@
 import axios from 'axios';
 
+const HARD_CODED_API_URL = 'https://chaishots-cms-api.onrender.com';
+
 export function getApiClient() {
-  const baseURL = process.env.NEXT_PUBLIC_API_URL;
-
-  if (!baseURL) {
-    throw new Error('NEXT_PUBLIC_API_URL is not defined');
-  }
-
   return axios.create({
-    baseURL,
+    baseURL: HARD_CODED_API_URL,
     withCredentials: true,
   });
 }
